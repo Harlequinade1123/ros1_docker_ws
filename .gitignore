@@ -1,0 +1,24 @@
+# catkin ビルド成果物
+catkin_ws/build/
+catkin_ws/devel/
+catkin_ws/install/
+catkin_ws/logs/
+catkin_ws/.catkin_tools/
+
+# src/ 以下のクローンパッケージは管理しない（vcstool で取得）
+catkin_ws/src/*/
+
+# rosbag (大容量ファイルは Git 管理外)
+bags/*.bag
+bags/*.bag.active
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*~

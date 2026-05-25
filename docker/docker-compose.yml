@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  ros:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ros1_noetic_ws:latest
+    container_name: ros1_ws
+
+    # ── ホストのワークスペースをコンテナにマウント ──────────────
+    volumes:
+      - ../catkin_ws:/home/ros/catkin_ws         # ソースはホストで管理
+      - ../bags:/home/ros/bags                    # rosbag 保存先
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw         # X11 GUI 転送
+      - /dev:/dev                                # 全デバイス共有（起動後接続も有効）
+      - /run/udev:/run/udev:ro                   # udev イベント共有（デバイス自動認識）
+
+    # ── GUI 用の環境変数 ──────────────────────────────────────────
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+
+    # ── ネットワーク ───────────────────────────────────────────────
+    network_mode: host
+
+    # ── 権限設定 ──────────────────────────────────────────────────
+    # privileged: true により以下がすべて有効になります:
+    #   - 起動後に接続した USB デバイスも自動認識
+    #   - CAN インターフェースの up/down/bitrate 設定
+    #   - ゲームパッド・カメラ・シリアル等あらゆるデバイスへのアクセス
+    privileged: true
+
+    stdin_open: true
+    tty: true
+    working_dir: /home/ros/catkin_ws
+
+    # ── GPU サポート (任意) ────────────────────────────────────────
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── roscore 専用コンテナ (オプション) ────────────────────────────
+  roscore:
+    image: ros1_noetic_ws:latest
+    container_name: roscore
+    network_mode: host
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+    command: roscore
+    profiles:
+      - with-roscore
