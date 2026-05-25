@@ -42,6 +42,44 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-dri \
     x11-apps \
     mesa-utils \
+    # URDF / xacro / ロボットモデル
+    ros-noetic-xacro \
+    ros-noetic-urdf \
+    ros-noetic-robot-state-publisher \
+    ros-noetic-joint-state-publisher \
+    ros-noetic-joint-state-publisher-gui \
+    # TF
+    ros-noetic-tf \
+    ros-noetic-tf2-ros \
+    ros-noetic-tf2-tools \
+    # ros_control
+    ros-noetic-ros-control \
+    ros-noetic-ros-controllers \
+    # geometry
+    ros-noetic-geometry \
+    # アクション・動的設定
+    ros-noetic-actionlib \
+    ros-noetic-dynamic-reconfigure \
+    # 画像・点群
+    ros-noetic-image-transport \
+    ros-noetic-image-proc \
+    ros-noetic-image-geometry \
+    ros-noetic-cv-bridge \
+    ros-noetic-pcl-ros \
+    ros-noetic-nodelet \
+    # LiDAR
+    ros-noetic-laser-geometry \
+    ros-noetic-laser-filters \
+    # ユーティリティ
+    ros-noetic-angles \
+    ros-noetic-filters \
+    ros-noetic-pluginlib \
+    # 可視化補助
+    ros-noetic-rqt-graph \
+    ros-noetic-rqt-tf-tree \
+    # ワークスペース管理
+    python3-vcstool \
+    python3-wstool \
     # その他
     tmux \
     vim \
@@ -55,9 +93,13 @@ RUN rosdep init || true && rosdep update
 ARG WORKSPACE=/home/ros/catkin_ws
 ENV WORKSPACE=${WORKSPACE}
 
+RUN apt-get update && apt-get install -y --no-install-recommends sudo \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -s /bin/bash ros && \
     mkdir -p ${WORKSPACE}/src && \
     usermod -aG dialout ros && \
+    echo "ros ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     chown -R ros:ros /home/ros
 
 USER ros
@@ -75,7 +117,8 @@ RUN mkdir -p ${WORKSPACE}/src && \
 RUN mkdir -p /home/ros/bags
 
 # ── bashrc に自動 source ───────────────────────────────────────────
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc && \
+RUN echo "[ -f /usr/share/bash-completion/bash_completion ] && source /usr/share/bash-completion/bash_completion" >> ~/.bashrc && \
+    echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc && \
     echo "[ -f ${WORKSPACE}/devel/setup.bash ] && source ${WORKSPACE}/devel/setup.bash" >> ~/.bashrc && \
     echo "export ROS_HOSTNAME=localhost" >> ~/.bashrc && \
     echo "export ROS_MASTER_URI=http://localhost:11311" >> ~/.bashrc && \
