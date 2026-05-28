@@ -29,7 +29,8 @@ param(
     [string]$ID     = "123",
     [string]$DATA   = "00 00 00 00",
     [string]$PORT   = "/dev/ttyUSB0",
-    [int]$BAUD      = 115200
+    [int]$BAUD      = 115200,
+    [string]$JsDev  = "/dev/input/js0"
 )
 
 Set-StrictMode -Version Latest
@@ -60,6 +61,18 @@ function Test-VcXsrv {
     }
 }
 
+function Test-UsbIpdJoystick {
+    param([string]$Dev = "/dev/input/js0")
+    # WSL2 上でジョイスティックデバイスが存在するか確認
+    $result = wsl -- test -e $Dev 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "ジョイスティックデバイス ($Dev) が WSL2 上に見つかりません。"
+        Write-Warning "手順: 1) usbipd list でデバイスIDを確認"
+        Write-Warning "      2) usbipd attach --wsl --busid <ID> でアタッチ"
+        Write-Warning "      3) 再度このコマンドを実行してください"
+    }
+}
+
 # ── コマンド ─────────────────────────────────────────────────────────
 
 switch ($Command.ToLower()) {
@@ -78,7 +91,7 @@ switch ($Command.ToLower()) {
     }
 
     "shell" {
-        & docker exec -it ros1_ws bash
+        & docker exec -it -u ros ros1_ws bash
     }
 
     "shell-new" {
@@ -111,6 +124,13 @@ switch ($Command.ToLower()) {
     # ── rosdep ──────────────────────────────────────────────────────
     "rosdep-install" {
         Invoke-InRos "cd /home/ros/catkin_ws && rosdep install --from-paths src --ignore-src -r -y"
+    }
+
+    # ── ジョイスティック ─────────────────────────────────────────────
+    "joy" {
+        Test-UsbIpdJoystick -Dev $JsDev
+        Invoke-InRos ("source /opt/ros/noetic/setup.bash && " +
+                      "rosrun joy joy_node _dev:=$JsDev")
     }
 
     # ── GUI ─────────────────────────────────────────────────────────
@@ -228,6 +248,7 @@ ROS1 Noetic Docker - Windows コマンドランナー (run.ps1)
 [ROS]
   rosdep-install                     src/ の依存パッケージをインストール
   roscore                            roscore専用コンテナを起動
+  joy [-JsDev /dev/input/js0]        ジョイスティックノードを起動 (usbipd-win必要)
   rviz                               RVizを起動 (VcXsrv必要)
   gazebo                             Gazeboを起動 (VcXsrv必要)
 
