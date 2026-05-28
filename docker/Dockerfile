@@ -60,6 +60,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # アクション・動的設定
     ros-noetic-actionlib \
     ros-noetic-dynamic-reconfigure \
+    # テスト
+    ros-noetic-rostest \
+    # テレオペ
+    ros-noetic-joy \
     # 画像・点群
     ros-noetic-image-transport \
     ros-noetic-image-proc \
@@ -86,6 +90,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tmux \
     vim \
     bash-completion \
+    htop \
+    net-tools \
+    wget \
+    jq \
   && rm -rf /var/lib/apt/lists/*
 
 # ── rosdep 初期化 ──────────────────────────────────────────────────
@@ -103,6 +111,10 @@ RUN useradd -m -s /bin/bash ros && \
     usermod -aG dialout ros && \
     echo "ros ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     chown -R ros:ros /home/ros
+
+# gosu: エントリーポイントで root → ros ユーザへ安全に移行するため
+RUN apt-get update && apt-get install -y --no-install-recommends gosu \
+  && rm -rf /var/lib/apt/lists/*
 
 USER ros
 WORKDIR ${WORKSPACE}
@@ -134,4 +146,10 @@ RUN echo "[ -f /usr/share/bash-completion/bash_completion ] && source /usr/share
     echo "# シリアルヘルパー" >> ~/.bashrc && \
     echo "alias serial-list='ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null'" >> ~/.bashrc
 
-CMD ["/bin/bash"]
+# エントリーポイント: root で起動 → デバイスGID付与 → gosu で ros ユーザへ移行
+USER root
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

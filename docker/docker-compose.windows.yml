@@ -18,8 +18,12 @@ services:
     volumes:
       - ../catkin_ws:/home/ros/catkin_ws   # ソースはホストで管理
       - ../bags:/home/ros/bags              # rosbag 保存先
+      # ジョイスティックを使う場合のみ有効（usbipd-win でアタッチ後に WSL2 へ /dev/input が現れる）
+      # ジョイスティック未使用時や /dev/input が存在しない場合はこの行をコメントアウトすること
+      - /dev/input:/dev/input              # ジョイスティック (usbipd-win アタッチ後)
 
-    # USB デバイスをコンテナに渡す場合は usbipd-win でアタッチ後に以下を有効化
+    # シリアル USB デバイスを個別にパススルーする場合は以下を有効化
+    # (usbipd-win でアタッチ済みであること)
     # devices:
     #   - /dev/ttyUSB0:/dev/ttyUSB0        # シリアル (CH340、FTDI 等)
     #   - /dev/ttyACM0:/dev/ttyACM0        # CDC ACM (Arduino 等)
