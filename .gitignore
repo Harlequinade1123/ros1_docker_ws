@@ -22,3 +22,11 @@ __pycache__/
 .idea/
 *.swp
 *~
+
+# Claude Code
+.claude/
+
+# npm / npx
+node_modules/
+package.json
+package-lock.json

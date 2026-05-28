@@ -1,0 +1,11 @@
+# テキストファイルの改行コードを自動変換
+* text=auto
+
+# シェルスクリプトは必ず LF (Windowsでクローンしても壊れない)
+*.sh    text eol=lf
+Makefile text eol=lf
+
+# Windows スクリプトは CRLF
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
