@@ -12,7 +12,8 @@ ROS1 Noetic Docker ワークスペースを Ubuntu (Linux) で動かすための
 4. [GUI ツール（RViz / Gazebo）](#4-gui-ツールrviz--gazebo)
 5. [CAN 通信](#5-can-通信)
 6. [シリアル通信](#6-シリアル通信)
-7. [GPU サポート（任意）](#7-gpu-サポート任意)
+7. [ジョイスティック](#7-ジョイスティック)
+8. [GPU サポート（任意）](#8-gpu-サポート任意)
 
 ---
 
@@ -262,7 +263,53 @@ rosrun rosserial_python serial_node.py /dev/ttyUSB0 _baud:=115200
 
 ---
 
-## 7. GPU サポート（任意）
+## 7. ジョイスティック
+
+`docker-compose.yml` では `/dev:/dev` でホストの全デバイスを共有しているため，ジョイスティックを接続するだけでコンテナ内から `/dev/input/js*` として認識されます．  
+コンテナ起動時に `entrypoint.sh` がデバイスの GID を `ros` ユーザへ自動付与するため，追加の権限設定は不要です．
+
+### 接続確認
+
+```bash
+# ホスト側でデバイスを確認
+ls -l /dev/input/js*
+# → /dev/input/js0, /dev/input/js1 等が表示されること
+
+# コンテナ内でも同様に確認
+make shell
+ls -l /dev/input/js*
+```
+
+### joy ノードの起動
+
+```bash
+# デフォルト（/dev/input/js0）
+make joy
+
+# 別デバイスの場合
+make joy JS_DEV=/dev/input/js1
+```
+
+別ターミナルでトピックを確認します．
+
+```bash
+make shell
+source /opt/ros/noetic/setup.bash
+rostopic echo /joy
+```
+
+### 複数のジョイスティックが接続されている場合
+
+`js0`，`js1` のどちらが目的のデバイスかわからない場合は `jstest` で確認できます．
+
+```bash
+make shell
+jstest /dev/input/js0
+```
+
+---
+
+## 8. GPU サポート（任意）
 
 NVIDIA GPU を使う場合は `docker-compose.yml` の `deploy` セクションをアンコメントしてください．
 

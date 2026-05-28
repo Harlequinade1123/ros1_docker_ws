@@ -26,7 +26,7 @@ ros1_docker_ws/
 │   ├── Dockerfile                ← ROS Noetic イメージ定義（両 OS 共通）
 │   ├── docker-compose.yml        ← Linux 用（host ネットワーク・X11 Unix ソケット）
 │   ├── docker-compose.windows.yml ← Windows 用（bridge ネットワーク・VcXsrv TCP）
-│   └── entrypoint.sh             ← 起動時に setup.bash を自動 source
+│   └── entrypoint.sh             ← 起動時にジョイスティック GID 付与・setup.bash を自動 source
 ├── docs/
 │   ├── ubuntu-setup.md           ← Ubuntu 詳細ガイド（CAN・シリアル・GUI 等）
 │   └── windows-setup.md          ← Windows 詳細ガイド（usbipd・VcXsrv 等）
@@ -187,6 +187,7 @@ make help        # Ubuntu
 | bag メタ情報 | `bag-info BAG=...` | `bag-info -BAG ...` |
 | bag 圧縮 | `bag-compress BAG=...` | `bag-compress -BAG ...` |
 | bag 一覧 | `bag-list` | `bag-list` |
+| ジョイスティック起動 | `joy [JS_DEV=...]` | `joy [-JsDev ...]` |
 | CAN 起動 | `can-up [IFACE=...] [BITRATE=...]` | 非対応 |
 | CAN 停止 | `can-down [IFACE=...]` | 非対応 |
 | CAN ダンプ | `can-dump [IFACE=...]` | 非対応 |
@@ -199,7 +200,7 @@ make help        # Ubuntu
 ## プラットフォーム別の詳細
 
 - **Ubuntu / Linux**: [docs/ubuntu-setup.md](docs/ubuntu-setup.md)  
-  GUI (X11)・CAN 通信・シリアル通信・VS Code Dev Container・GPU サポート
+  GUI (X11)・ジョイスティック・CAN 通信・シリアル通信・GPU サポート
 
 - **Windows**: [docs/windows-setup.md](docs/windows-setup.md)  
-  Docker Desktop・VcXsrv・usbipd-win・シリアル通信・トラブルシューティング
+  Docker Desktop・VcXsrv・usbipd-win・ジョイスティック・シリアル通信・トラブルシューティング
