@@ -6,20 +6,32 @@ RViz / Gazebo 対応の ROS1 Noetic 開発環境です。
 
 ---
 
+## 対応プラットフォーム
+
+| OS | 実行ツール | セットアップガイド |
+|---|---|---|
+| Ubuntu / Linux | `make` | [docs/ubuntu-setup.md](docs/ubuntu-setup.md) |
+| Windows (PowerShell) | `.\run.ps1` | [docs/windows-setup.md](docs/windows-setup.md) |
+
+---
+
 ## ディレクトリ構成
 
 ```
-ros1_ws/
-├── catkin_ws/              ← ホスト管理ワークスペース (Git 管理対象)
-│   └── src/                ← ここにパッケージを置く
-├── bags/                   ← rosbag の保存先（コンテナ /home/ros/bags と同期）
-│   └── .gitkeep
+ros1_docker_ws/
+├── catkin_ws/                    ← ホスト管理ワークスペース (Git 管理対象)
+│   └── src/                      ← ここにパッケージを置く
+├── bags/                         ← rosbag の保存先（コンテナ /home/ros/bags と同期）
 ├── docker/
-│   ├── Dockerfile          ← ROS Noetic + RViz/Gazebo/rosbag イメージ定義
-│   └── entrypoint.sh       ← 起動時に setup.bash を自動 source
-├── .devcontainer/          ← VS Code Dev Container 設定
-├── docker-compose.yml      ← X11 転送・bags マウント設定済み
-├── Makefile                ← よく使うコマンド集
+│   ├── Dockerfile                ← ROS Noetic イメージ定義（両 OS 共通）
+│   ├── docker-compose.yml        ← Linux 用（host ネットワーク・X11 Unix ソケット）
+│   ├── docker-compose.windows.yml ← Windows 用（bridge ネットワーク・VcXsrv TCP）
+│   └── entrypoint.sh             ← 起動時に setup.bash を自動 source
+├── docs/
+│   ├── ubuntu-setup.md           ← Ubuntu 詳細ガイド（CAN・シリアル・GUI 等）
+│   └── windows-setup.md          ← Windows 詳細ガイド（usbipd・VcXsrv 等）
+├── Makefile                      ← Ubuntu / Linux 用コマンド集
+├── run.ps1                       ← Windows PowerShell 用コマンド集
 └── .gitignore
 ```
 
@@ -27,11 +39,13 @@ ros1_ws/
 
 ## クイックスタート
 
+### Ubuntu / Linux
+
 ```bash
 # 1. イメージをビルド（初回のみ、数分かかります）
 make build
 
-# 2. ワークスペースを初期化（初回のみ）
+# 2. catkin ワークスペースを初期化（初回のみ）
 make catkin-init
 
 # 3. パッケージを src/ に配置してビルド
@@ -43,6 +57,26 @@ make up               # コンテナ起動
 make shell            # bash に入る
 ```
 
+### Windows (PowerShell)
+
+```powershell
+# 1. イメージをビルド（初回のみ、数分かかります）
+.\run.ps1 build
+
+# 2. catkin ワークスペースを初期化（初回のみ）
+.\run.ps1 catkin-init
+
+# 3. パッケージを src\ に配置してビルド
+.\run.ps1 rosdep-install   # 依存パッケージをインストール
+.\run.ps1 catkin-build     # ビルド
+
+# 4. コンテナに入って作業
+.\run.ps1 up               # コンテナ起動
+.\run.ps1 shell            # bash に入る
+```
+
+> 初回セットアップの詳細は各 OS のガイドを参照してください。
+
 ---
 
 ## catkin build の使い方
@@ -50,20 +84,18 @@ make shell            # bash に入る
 このワークスペースは `catkin build`（catkin-tools）を使用します。  
 `catkin_make` とは異なり、並列・差分ビルドが効率的に動作します。
 
-### 基本操作
+### コマンド一覧
 
-| コマンド | 内容 |
-|---|---|
-| `make catkin-init` | ワークスペースを初期化（初回のみ） |
-| `make catkin-build` | 全パッケージをビルド |
-| `make catkin-build-pkg PKG=my_pkg` | 特定パッケージのみビルド |
-| `make catkin-clean` | ビルド成果物を削除 |
+| 操作 | Ubuntu (make) | Windows (run.ps1) |
+|---|---|---|
+| ワークスペース初期化（初回のみ） | `make catkin-init` | `.\run.ps1 catkin-init` |
+| 全パッケージをビルド | `make catkin-build` | `.\run.ps1 catkin-build` |
+| 特定パッケージのみビルド | `make catkin-build-pkg PKG=my_pkg` | `.\run.ps1 catkin-build-pkg -PKG my_pkg` |
+| ビルド成果物を削除 | `make catkin-clean` | `.\run.ps1 catkin-clean` |
 
 ### コンテナ内での操作
 
 ```bash
-make shell   # コンテナに入る
-
 # 全体ビルド
 catkin build
 
@@ -88,244 +120,86 @@ catkin config
 
 ### 録画（record）
 
-```bash
-# 全トピックを録画
-make bag-record
-
-# 指定したトピックのみ録画
-make bag-record TOPICS="/cmd_vel /odom /scan"
-
-# コンテナ内で直接実行する場合
-make shell
-rosbag record -o /home/ros/bags/ /cmd_vel /odom /scan
-```
+| 操作 | Ubuntu (make) | Windows (run.ps1) |
+|---|---|---|
+| 全トピックを録画 | `make bag-record` | `.\run.ps1 bag-record` |
+| 指定トピックを録画 | `make bag-record TOPICS="/cmd_vel /odom"` | `.\run.ps1 bag-record -TOPICS "/cmd_vel /odom"` |
 
 録画ファイルは `bags/` に `2024-01-01-12-00-00.bag` のような名前で保存されます。  
 録画を止めるには **Ctrl+C** を押します。
 
 ### 再生（play）
 
+| 操作 | Ubuntu (make) | Windows (run.ps1) |
+|---|---|---|
+| 通常速度で再生 | `make bag-play BAG=xxx.bag` | `.\run.ps1 bag-play -BAG xxx.bag` |
+| 倍速指定で再生 | `make bag-play BAG=xxx.bag RATE=0.5` | `.\run.ps1 bag-play -BAG xxx.bag -RATE 0.5` |
+| メタ情報の確認 | `make bag-info BAG=xxx.bag` | `.\run.ps1 bag-info -BAG xxx.bag` |
+| ファイル一覧 | `make bag-list` | `.\run.ps1 bag-list` |
+| bz2 圧縮 | `make bag-compress BAG=xxx.bag` | `.\run.ps1 bag-compress -BAG xxx.bag` |
+
+### コンテナ内での操作（共通）
+
 ```bash
-# 通常速度で再生
-make bag-play BAG=2024-01-01-12-00-00.bag
-
-# 0.5倍速で再生
-make bag-play BAG=2024-01-01-12-00-00.bag RATE=0.5
-
-# コンテナ内で直接実行する場合（--clock で /clock トピックを発行）
-make shell
-rosbag play --clock -r 1.0 /home/ros/bags/2024-01-01-12-00-00.bag
-
 # ループ再生
 rosbag play --clock --loop /home/ros/bags/2024-01-01-12-00-00.bag
 
 # 特定トピックのみ再生
 rosbag play /home/ros/bags/2024-01-01-12-00-00.bag --topics /cmd_vel /odom
-```
 
-> **注意**: `--clock` オプションを付けると `/clock` トピックが発行されます。  
-> `rospy`/`roscpp` で時刻同期が必要な場合は `use_sim_time:=true` も設定してください。
-
-```bash
 # use_sim_time を有効にする場合
 rosparam set use_sim_time true
 rosbag play --clock /home/ros/bags/2024-01-01-12-00-00.bag
-```
 
-### 情報確認・管理
-
-```bash
-# bag ファイルのメタ情報を確認（トピック一覧・時間・サイズなど）
-make bag-info BAG=2024-01-01-12-00-00.bag
-
-# bags/ 内のファイル一覧
-make bag-list
-
-# bz2 圧縮（ファイルサイズを削減）
-make bag-compress BAG=2024-01-01-12-00-00.bag
-```
-
-### rqt_bag で GUI 操作
-
-```bash
-make shell
+# rqt_bag で GUI 操作（Ubuntu のみ）
 rqt_bag /home/ros/bags/2024-01-01-12-00-00.bag
 ```
 
-rqt_bag ではトピックの波形確認や、範囲を指定した再生ができます。
-
----
-
-## GUI ツール（RViz / Gazebo）
-
-Linux ホストでは X11 転送により RViz / Gazebo が使えます。
-
-```bash
-make rviz     # RViz を起動
-make gazebo   # Gazebo を起動
-```
-
-> `make up` / `make down` / `make shell` / `make rviz` / `make gazebo` 実行時に `xhost +local:docker` が自動実行されます。
+> `--clock` オプションを付けると `/clock` トピックが発行されます。  
+> `rospy`/`roscpp` で時刻同期が必要な場合は `use_sim_time:=true` も設定してください。
 
 ---
 
 ## コマンド一覧
 
 ```bash
-make help
+make help        # Ubuntu
+.\run.ps1 help   # Windows
 ```
 
-| コマンド | 説明 |
-|---|---|
-| `build` | Docker イメージをビルド |
-| `up` | コンテナをバックグラウンドで起動 |
-| `down` | コンテナを停止・削除 |
-| `shell` | 実行中コンテナに入る |
-| `shell-new` | 新しいコンテナセッションを起動 |
-| `roscore` | roscore 専用コンテナを起動（`--profile with-roscore`） |
-| `catkin-init` | catkin ワークスペース初期化 |
-| `catkin-build` | ワークスペース全体をビルド |
-| `catkin-build-pkg PKG=...` | 特定パッケージのみビルド |
-| `catkin-clean` | ビルド成果物を削除 |
-| `rosdep-install` | src/ の依存を自動インストール |
-| `rviz` | RViz を起動 |
-| `gazebo` | Gazebo を起動 |
-| `bag-record [TOPICS=...]` | rosbag を録画 |
-| `bag-play BAG=... [RATE=...]` | rosbag を再生 |
-| `bag-info BAG=...` | bag のメタ情報を表示 |
-| `bag-compress BAG=...` | bag を bz2 圧縮 |
-| `bag-list` | bags/ 内のファイル一覧 |
+| コマンド | Ubuntu (make) | Windows (run.ps1) |
+|---|---|---|
+| イメージをビルド | `build` | `build` |
+| コンテナ起動 | `up` | `up` |
+| コンテナ停止 | `down` | `down` |
+| コンテナに入る | `shell` | `shell` |
+| 新規シェルセッション | `shell-new` | `shell-new` |
+| roscore 起動 | `roscore` | `roscore` |
+| catkin 初期化 | `catkin-init` | `catkin-init` |
+| 全体ビルド | `catkin-build` | `catkin-build` |
+| 特定パッケージビルド | `catkin-build-pkg PKG=...` | `catkin-build-pkg -PKG ...` |
+| ビルド成果物削除 | `catkin-clean` | `catkin-clean` |
+| 依存パッケージインストール | `rosdep-install` | `rosdep-install` |
+| RViz 起動 | `rviz` | `rviz` |
+| Gazebo 起動 | `gazebo` | `gazebo` |
+| rosbag 録画 | `bag-record [TOPICS=...]` | `bag-record [-TOPICS ...]` |
+| rosbag 再生 | `bag-play BAG=... [RATE=...]` | `bag-play -BAG ... [-RATE ...]` |
+| bag メタ情報 | `bag-info BAG=...` | `bag-info -BAG ...` |
+| bag 圧縮 | `bag-compress BAG=...` | `bag-compress -BAG ...` |
+| bag 一覧 | `bag-list` | `bag-list` |
+| CAN 起動 | `can-up [IFACE=...] [BITRATE=...]` | 非対応 |
+| CAN 停止 | `can-down [IFACE=...]` | 非対応 |
+| CAN ダンプ | `can-dump [IFACE=...]` | 非対応 |
+| CAN 送信 | `can-send [IFACE=...] [ID=...] [DATA=...]` | 非対応 |
+| シリアル一覧 | `serial-list` | `serial-list` |
+| シリアルモニタ | `serial-monitor [PORT=...] [BAUD=...]` | `serial-monitor [-PORT ...] [-BAUD ...]` |
 
 ---
 
-## VS Code Dev Container
+## プラットフォーム別の詳細
 
-`.devcontainer/devcontainer.json` が含まれているため、Dev Container でそのまま開発できます。
+- **Ubuntu / Linux**: [docs/ubuntu-setup.md](docs/ubuntu-setup.md)  
+  GUI (X11)・CAN 通信・シリアル通信・VS Code Dev Container・GPU サポート
 
-1. VS Code で `ros1_ws/` を開く
-2. 左下 `><` → `Reopen in Container`
-
----
-
-## CAN 通信
-
-SocketCAN ベースの CAN インターフェース（`can0` など）を使用します。  
-`network_mode: host` と `cap_add: NET_ADMIN` により、ホストの CAN インターフェースをそのままコンテナ内から操作できます。
-
-### ホスト側の事前準備
-
-USB-CAN アダプタ（Peak PCAN、Kvaser 等）を接続後、**ホスト側**でカーネルモジュールをロードします。
-
-```bash
-# SocketCAN モジュールの読み込み（初回 or 再起動後）
-sudo modprobe can
-sudo modprobe can_raw
-sudo modprobe can_dev
-
-# USB-CAN アダプタの場合（例: Peak PCAN USB）
-sudo modprobe peak_usb
-
-# slcan 系アダプタ（USB-シリアル変換タイプ）の場合
-sudo slcand -o -s6 -t hw /dev/ttyUSB0 can0
-```
-
-### CAN インターフェースの起動・停止
-
-```bash
-# can0 を 1Mbps で起動
-make can-up IFACE=can0 BITRATE=1000000
-
-# 他のビットレート例
-make can-up IFACE=can0 BITRATE=500000   # 500kbps
-make can-up IFACE=can0 BITRATE=250000   # 250kbps
-
-# 停止
-make can-down IFACE=can0
-
-# 状態確認（エラーカウント等も表示）
-make can-status IFACE=can0
-```
-
-### フレームの送受信確認
-
-```bash
-# 受信フレームをすべて表示（Ctrl+C で停止）
-make can-dump IFACE=can0
-
-# フレームを1回送信（ID=0x123, データ=0x11 0x22 0x33）
-make can-send IFACE=can0 ID=123 DATA="11 22 33"
-
-# コンテナ内で直接操作する場合
-make shell
-candump can0                          # 受信ダンプ
-cansend can0 123#DEADBEEF             # 送信
-cangen can0 -D i -L 8                 # ランダムフレームを連続送信（テスト用）
-```
-
-### ROS ノードから CAN を使う場合
-
-`ros_canopen` や `socketcan_bridge` パッケージが代表的です。
-
-```bash
-# socketcan_bridge を使う場合（src/ にクローンしてビルド）
-cd catkin_ws/src
-git clone https://github.com/ros-industrial/ros_canopen.git
-make rosdep-install
-make catkin-build
-```
-
----
-
-## シリアル通信
-
-### デバイスのパススルー設定
-
-`docker-compose.yml` では `/dev:/dev` でホストの全デバイスをコンテナに共有しています。  
-追加の設定は不要で、ホストに接続した USB-シリアルデバイス（`/dev/ttyUSB0`、`/dev/ttyACM0` 等）はそのままコンテナ内から使用できます。
-
-> **補足**: コンテナ内ユーザー `ros` は `dialout` グループに所属しているため、`sudo` なしでシリアルデバイスにアクセスできます。
-
-### 接続確認
-
-```bash
-# 接続中のシリアルデバイス一覧
-make serial-list
-
-# デバイス名が変わる場合はシリアル番号で固定する（ホスト側）
-udevadm info -a -n /dev/ttyUSB0 | grep serial
-# → /etc/udev/rules.d/99-usb-serial.rules に登録すると /dev/my_device で固定できる
-```
-
-### シリアルモニタ（minicom）
-
-```bash
-# 115200bps でモニタを開く
-make serial-monitor PORT=/dev/ttyUSB0 BAUD=115200
-
-# minicom の操作
-#   Ctrl+A → Z  : ヘルプ
-#   Ctrl+A → X  : 終了
-```
-
-### ROS ノードからシリアルを使う場合
-
-```bash
-make shell
-
-# Python (pyserial) で直接アクセス
-python3 -c "
-import serial
-ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
-ser.write(b'hello\n')
-print(ser.readline())
-"
-
-# rosserial（Arduino 等との連携）を使う場合
-rosrun rosserial_python serial_node.py /dev/ttyUSB0 _baud:=115200
-```
-
----
-
-## GPU サポート（任意）
-
-NVIDIA GPU を使う場合は `docker-compose.yml` の `deploy` セクションをアンコメントしてください。
+- **Windows**: [docs/windows-setup.md](docs/windows-setup.md)  
+  Docker Desktop・VcXsrv・usbipd-win・シリアル通信・トラブルシューティング
