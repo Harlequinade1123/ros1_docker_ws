@@ -1,8 +1,8 @@
 # ROS1 Noetic Docker ワークスペース
 
-RViz / Gazebo 対応の ROS1 Noetic 開発環境です。  
-ソースコードはホストで管理し、**実行はすべて Docker コンテナ内**で行います。  
-ビルドには `catkin build`（catkin-tools）を使用し、rosbag の録画・再生にも対応しています。
+RViz / Gazebo 対応の ROS1 Noetic 開発環境です．  
+ソースコードはホストで管理し，**実行はすべて Docker コンテナ内**で行います．  
+ビルドには `catkin build`（catkin-tools）を使用し，rosbag の録画・再生にも対応しています．
 
 ---
 
@@ -42,7 +42,7 @@ ros1_docker_ws/
 ### Ubuntu / Linux
 
 ```bash
-# 1. イメージをビルド（初回のみ、数分かかります）
+# 1. イメージをビルド（初回のみ，数分かかります）
 make build
 
 # 2. catkin ワークスペースを初期化（初回のみ）
@@ -60,7 +60,7 @@ make shell            # bash に入る
 ### Windows (PowerShell)
 
 ```powershell
-# 1. イメージをビルド（初回のみ、数分かかります）
+# 1. イメージをビルド（初回のみ，数分かかります）
 .\run.ps1 build
 
 # 2. catkin ワークスペースを初期化（初回のみ）
@@ -75,14 +75,14 @@ make shell            # bash に入る
 .\run.ps1 shell            # bash に入る
 ```
 
-> 初回セットアップの詳細は各 OS のガイドを参照してください。
+> 初回セットアップの詳細は各 OS のガイドを参照してください．
 
 ---
 
 ## catkin build の使い方
 
-このワークスペースは `catkin build`（catkin-tools）を使用します。  
-`catkin_make` とは異なり、並列・差分ビルドが効率的に動作します。
+このワークスペースは `catkin build`（catkin-tools）を使用します．  
+`catkin_make` とは異なり，並列・差分ビルドが効率的に動作します．
 
 ### コマンド一覧
 
@@ -109,14 +109,14 @@ catkin list
 catkin config
 ```
 
-> **注意**: `catkin_make` は使用しないでください。`.catkin_tools/` の設定が上書きされる場合があります。
+> **注意**: `catkin_make` は使用しないでください．`.catkin_tools/` の設定が上書きされる場合があります．
 
 ---
 
 ## rosbag の使い方
 
-`bags/` ディレクトリがホストとコンテナ間で共有されているため、  
-コンテナ内で録画した bag ファイルはホストの `bags/` からそのまま参照できます。
+`bags/` ディレクトリがホストとコンテナ間で共有されているため，  
+コンテナ内で録画した bag ファイルはホストの `bags/` からそのまま参照できます．
 
 ### 録画（record）
 
@@ -125,8 +125,8 @@ catkin config
 | 全トピックを録画 | `make bag-record` | `.\run.ps1 bag-record` |
 | 指定トピックを録画 | `make bag-record TOPICS="/cmd_vel /odom"` | `.\run.ps1 bag-record -TOPICS "/cmd_vel /odom"` |
 
-録画ファイルは `bags/` に `2024-01-01-12-00-00.bag` のような名前で保存されます。  
-録画を止めるには **Ctrl+C** を押します。
+録画ファイルは `bags/` に `2024-01-01-12-00-00.bag` のような名前で保存されます．  
+録画を止めるには **Ctrl+C** を押します．
 
 ### 再生（play）
 
@@ -155,8 +155,8 @@ rosbag play --clock /home/ros/bags/2024-01-01-12-00-00.bag
 rqt_bag /home/ros/bags/2024-01-01-12-00-00.bag
 ```
 
-> `--clock` オプションを付けると `/clock` トピックが発行されます。  
-> `rospy`/`roscpp` で時刻同期が必要な場合は `use_sim_time:=true` も設定してください。
+> `--clock` オプションを付けると `/clock` トピックが発行されます．  
+> `rospy`/`roscpp` で時刻同期が必要な場合は `use_sim_time:=true` も設定してください．
 
 ---
 
