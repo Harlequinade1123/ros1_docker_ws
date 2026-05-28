@@ -74,6 +74,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-angles \
     ros-noetic-filters \
     ros-noetic-pluginlib \
+    # チュートリアル
+    ros-noetic-turtlesim \
     # 可視化補助
     ros-noetic-rqt-graph \
     ros-noetic-rqt-tf-tree \
