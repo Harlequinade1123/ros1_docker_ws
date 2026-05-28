@@ -1,0 +1,74 @@
+version: "3.9"
+
+# Windows 版 docker-compose
+# 変更点:
+#   - network_mode: host → bridge ネットワーク (Windows Docker では host モード非対応)
+#   - X11 Unix ソケットなし → VcXsrv へ TCP 接続 (DISPLAY=host.docker.internal:0.0)
+#   - /dev:/dev なし → USB デバイスは usbipd-win で個別パススルー
+#   - /run/udev なし
+
+services:
+  ros:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ros1_noetic_ws:latest
+    container_name: ros1_ws
+
+    volumes:
+      - ../catkin_ws:/home/ros/catkin_ws   # ソースはホストで管理
+      - ../bags:/home/ros/bags              # rosbag 保存先
+
+    # USB デバイスをコンテナに渡す場合は usbipd-win でアタッチ後に以下を有効化
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0        # シリアル (CH340、FTDI 等)
+    #   - /dev/ttyACM0:/dev/ttyACM0        # CDC ACM (Arduino 等)
+
+    environment:
+      - DISPLAY=host.docker.internal:0.0   # VcXsrv (Windows ホスト) への接続先
+      - QT_X11_NO_MITSHM=1
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+
+    ports:
+      - "11311:11311"                       # ROS Master URI ポート
+
+    # Windows では host ネットワークが使えないため bridge を使用
+    networks:
+      - ros_net
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    privileged: true
+    stdin_open: true
+    tty: true
+    working_dir: /home/ros/catkin_ws
+
+    # GPU サポート (任意 - NVIDIA GPU + nvidia-container-toolkit が必要)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── roscore 専用コンテナ (オプション) ────────────────────────────
+  # 使用: .\run.ps1 roscore
+  # ※ ros サービスの ROS_MASTER_URI を http://roscore:11311 に変更すること
+  roscore:
+    image: ros1_noetic_ws:latest
+    container_name: roscore
+    networks:
+      - ros_net
+    environment:
+      - ROS_MASTER_URI=http://roscore:11311
+      - ROS_HOSTNAME=roscore
+    command: roscore
+    profiles:
+      - with-roscore
+
+networks:
+  ros_net:
+    driver: bridge
