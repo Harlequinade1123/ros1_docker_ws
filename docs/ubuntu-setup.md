@@ -1,3 +1,5 @@
+**日本語** | [English](ubuntu-setup.en.md)
+
 # Ubuntu セットアップガイド
 
 ROS1 Noetic Docker ワークスペースを Ubuntu (Linux) で動かすための詳細手順書です．

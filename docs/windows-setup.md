@@ -1,3 +1,5 @@
+**日本語** | [English](windows-setup.en.md)
+
 # Windows セットアップガイド
 
 ROS1 Noetic Docker ワークスペースを Windows で動かすための手順書です．
