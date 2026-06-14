@@ -1,11 +1,10 @@
-﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    ROS1 Noetic Docker ワークスペース - Windows 用コマンドランナー
+    ROS1 Noetic Docker Workspace - Windows command runner
 
 .DESCRIPTION
-    Linux の Makefile に相当する Windows (PowerShell) 版スクリプト。
-    docker/docker-compose.windows.yml を使用します。
+    Windows PowerShell equivalent of the Linux Makefile.
+    Uses docker/docker-compose.windows.yml.
 
 .EXAMPLE
     .\run.ps1 build
@@ -27,7 +26,7 @@ param(
     [string]$IFACE  = "can0",
     [int]$BITRATE   = 1000000,
     [string]$ID     = "123",
-    [string]$DATA   = "00 00 00 00",
+    [string]$DATA   = "11.22.33.44",
     [string]$PORT   = "/dev/ttyUSB0",
     [int]$BAUD      = 115200,
     [string]$JsDev  = "/dev/input/js0"
@@ -39,7 +38,7 @@ $ErrorActionPreference = "Stop"
 $COMPOSE_FILE = "docker/docker-compose.windows.yml"
 $BAG_DIR      = "/home/ros/bags"
 
-# ── ヘルパー関数 ─────────────────────────────────────────────────────
+# ── Helper functions ─────────────────────────────────────────────
 
 function Invoke-Compose {
     param([string[]]$ComposeArgs)
@@ -49,40 +48,40 @@ function Invoke-Compose {
 
 function Invoke-InRos {
     param([string]$BashCmd)
-    & docker compose -f $COMPOSE_FILE run --rm ros bash -c $BashCmd
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    docker compose -f $COMPOSE_FILE exec -u ros ros bash -c $BashCmd
 }
 
 function Test-VcXsrv {
     $proc = Get-Process -Name "vcxsrv" -ErrorAction SilentlyContinue
     if (-not $proc) {
-        Write-Warning "VcXsrv が起動していません。GUI ツール (RViz/Gazebo) を使用するには VcXsrv を先に起動してください。"
-        Write-Warning "セットアップ手順: docs\windows-setup.md を参照"
+        Write-Warning "VcXsrv is not running. Start VcXsrv before using GUI tools (RViz/Gazebo)."
+        Write-Warning "Setup guide: docs\windows-setup.md"
     }
 }
 
 function Test-UsbIpdJoystick {
     param([string]$Dev = "/dev/input/js0")
-    # WSL2 上でジョイスティックデバイスが存在するか確認
+    # Check whether the joystick device is visible in WSL2
     $result = wsl -- test -e $Dev 2>$null
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "ジョイスティックデバイス ($Dev) が WSL2 上に見つかりません。"
-        Write-Warning "手順: 1) usbipd list でデバイスIDを確認"
-        Write-Warning "      2) usbipd attach --wsl --busid <ID> でアタッチ"
-        Write-Warning "      3) 再度このコマンドを実行してください"
+        Write-Warning "Joystick device ($Dev) not found in WSL2."
+        Write-Warning "Steps: 1) Run 'usbipd list' to find the device bus ID"
+        Write-Warning "       2) Run 'usbipd attach --wsl --busid <ID>' to attach it"
+        Write-Warning "       3) Re-run this command"
     }
 }
 
-# ── コマンド ─────────────────────────────────────────────────────────
+# ── Commands ─────────────────────────────────────────────────────
 
 switch ($Command.ToLower()) {
 
-    # ── Docker ──────────────────────────────────────────────────────
+    # ── Docker ──────────────────────────────────────────────────
     "build" {
         Invoke-Compose @("build")
     }
 
     "up" {
+        New-Item -ItemType Directory -Force -Path "catkin_ws\src", "bags" | Out-Null
         Invoke-Compose @("up", "-d")
     }
 
@@ -91,14 +90,14 @@ switch ($Command.ToLower()) {
     }
 
     "shell" {
-        & docker exec -it -u ros ros1_ws bash
+        Invoke-Compose @("exec", "-u", "ros", "ros", "bash")
     }
 
     "shell-new" {
-        Invoke-Compose @("run", "--rm", "ros", "bash")
+        docker exec -it -u ros ros1_ws bash
     }
 
-    # ── catkin ──────────────────────────────────────────────────────
+    # ── catkin ──────────────────────────────────────────────────
     "catkin-init" {
         Invoke-InRos ("source /opt/ros/noetic/setup.bash && " +
                       "catkin init && " +
@@ -111,7 +110,7 @@ switch ($Command.ToLower()) {
 
     "catkin-build-pkg" {
         if (-not $PKG) {
-            Write-Error "使い方: .\run.ps1 catkin-build-pkg -PKG <パッケージ名>"
+            Write-Error "Usage: .\run.ps1 catkin-build-pkg -PKG <package_name>"
             exit 1
         }
         Invoke-InRos "source /opt/ros/noetic/setup.bash && catkin build $PKG"
@@ -121,19 +120,19 @@ switch ($Command.ToLower()) {
         Invoke-InRos "catkin clean -y"
     }
 
-    # ── rosdep ──────────────────────────────────────────────────────
+    # ── rosdep ──────────────────────────────────────────────────
     "rosdep-install" {
         Invoke-InRos "cd /home/ros/catkin_ws && rosdep install --from-paths src --ignore-src -r -y"
     }
 
-    # ── ジョイスティック ─────────────────────────────────────────────
+    # ── Joystick ────────────────────────────────────────────────
     "joy" {
         Test-UsbIpdJoystick -Dev $JsDev
         Invoke-InRos ("source /opt/ros/noetic/setup.bash && " +
                       "rosrun joy joy_node _dev:=$JsDev")
     }
 
-    # ── GUI ─────────────────────────────────────────────────────────
+    # ── GUI ─────────────────────────────────────────────────────
     "roscore" {
         Invoke-Compose @("--profile", "with-roscore", "up", "roscore")
     }
@@ -150,14 +149,14 @@ switch ($Command.ToLower()) {
         Invoke-InRos "source /opt/ros/noetic/setup.bash && roslaunch gazebo_ros empty_world.launch"
     }
 
-    # ── rosbag ──────────────────────────────────────────────────────
+    # ── rosbag ──────────────────────────────────────────────────
     "bag-record" {
         Invoke-InRos "source /opt/ros/noetic/setup.bash && mkdir -p $BAG_DIR && rosbag record -o $BAG_DIR/ $TOPICS"
     }
 
     "bag-play" {
         if (-not $BAG) {
-            Write-Error "使い方: .\run.ps1 bag-play -BAG <ファイル名> [-RATE <倍率>]"
+            Write-Error "Usage: .\run.ps1 bag-play -BAG <filename> [-RATE <speed>]"
             exit 1
         }
         Invoke-InRos "source /opt/ros/noetic/setup.bash && rosbag play --clock -r $RATE $BAG_DIR/$BAG"
@@ -165,7 +164,7 @@ switch ($Command.ToLower()) {
 
     "bag-info" {
         if (-not $BAG) {
-            Write-Error "使い方: .\run.ps1 bag-info -BAG <ファイル名>"
+            Write-Error "Usage: .\run.ps1 bag-info -BAG <filename>"
             exit 1
         }
         Invoke-InRos "source /opt/ros/noetic/setup.bash && rosbag info $BAG_DIR/$BAG"
@@ -173,104 +172,98 @@ switch ($Command.ToLower()) {
 
     "bag-compress" {
         if (-not $BAG) {
-            Write-Error "使い方: .\run.ps1 bag-compress -BAG <ファイル名>"
+            Write-Error "Usage: .\run.ps1 bag-compress -BAG <filename>"
             exit 1
         }
         Invoke-InRos "source /opt/ros/noetic/setup.bash && rosbag compress --bz2 $BAG_DIR/$BAG"
     }
 
     "bag-list" {
-        Invoke-InRos "ls -lh $BAG_DIR/*.bag 2>/dev/null || echo '(bag ファイルがありません)'"
+        Invoke-InRos "ls -lh $BAG_DIR/*.bag 2>/dev/null || echo '(no bag files found)'"
     }
 
-    # ── CAN 通信 (Windows 非対応) ───────────────────────────────────
-    # SocketCAN は Linux カーネルの機能です。WSL2 のデフォルトカーネルには
-    # CAN モジュールが含まれておらず、Windows では使用できません。
-    # CAN 通信が必要な場合は Linux 環境（Makefile）を使用してください。
+    # ── CAN (not supported on Windows) ──────────────────────────
+    # SocketCAN is a Linux kernel feature. The default WSL2 kernel does not
+    # include CAN modules. Use 'make can-*' in a Linux environment instead.
 
     "can-up" {
-        Write-Error "CAN 通信は Windows では非対応です。Linux 環境で make can-up を使用してください。"
-        exit 1
+        Write-Warning "CAN is not supported on Windows. Use 'make can-up' in a Linux environment."
     }
 
     "can-down" {
-        Write-Error "CAN 通信は Windows では非対応です。Linux 環境で make can-down を使用してください。"
-        exit 1
+        Write-Warning "CAN is not supported on Windows. Use 'make can-down' in a Linux environment."
     }
 
     "can-status" {
-        Write-Error "CAN 通信は Windows では非対応です。Linux 環境で make can-status を使用してください。"
-        exit 1
+        Write-Warning "CAN is not supported on Windows. Use 'make can-status' in a Linux environment."
     }
 
     "can-dump" {
-        Write-Error "CAN 通信は Windows では非対応です。Linux 環境で make can-dump を使用してください。"
-        exit 1
+        Write-Warning "CAN is not supported on Windows. Use 'make can-dump' in a Linux environment."
     }
 
     "can-send" {
-        Write-Error "CAN 通信は Windows では非対応です。Linux 環境で make can-send を使用してください。"
-        exit 1
+        Write-Warning "CAN is not supported on Windows. Use 'make can-send' in a Linux environment."
     }
 
-    # ── シリアル通信 ─────────────────────────────────────────────────
-    # 注意: usbipd-win で USB シリアルデバイスをコンテナに渡す必要があります
-    # 参照: docs\windows-setup.md
+    # ── Serial ──────────────────────────────────────────────────
+    # Note: USB serial devices must be passed through via usbipd-win
+    # See: docs\windows-setup.md
 
     "serial-list" {
-        Invoke-InRos "ls -l /dev/ttyUSB* /dev/ttyACM* /dev/ttyS* 2>/dev/null || echo '(デバイスが見つかりません)'"
+        Invoke-InRos "ls -l /dev/ttyUSB* /dev/ttyACM* /dev/ttyS* 2>/dev/null || echo '(no serial devices found)'"
     }
 
     "serial-monitor" {
         Invoke-InRos "minicom -D $PORT -b $BAUD"
     }
 
-    # ── ヘルプ ──────────────────────────────────────────────────────
+    # ── Help ────────────────────────────────────────────────────
     "help" {
         Write-Host @"
-ROS1 Noetic Docker - Windows コマンドランナー (run.ps1)
+ROS1 Noetic Docker - Windows command runner (run.ps1)
 
-使い方: .\run.ps1 <コマンド> [オプション]
+Usage: .\run.ps1 <command> [options]
 
 [Docker]
-  build                              Dockerイメージをビルド
-  up                                 コンテナをバックグラウンドで起動
-  down                               コンテナを停止・削除
-  shell                              実行中コンテナにbashで入る
-  shell-new                          新しいシェルセッションを起動
+  build                              Build the Docker image
+  up                                 Start the container in the background
+  down                               Stop and remove the container
+  shell                              Open a bash shell in the running container
+  shell-new                          Open an additional bash shell
 
 [catkin]
-  catkin-init                        catkinワークスペースを初期化 (初回のみ)
-  catkin-build                       ワークスペース全体をビルド
-  catkin-build-pkg -PKG <名前>       特定パッケージのみビルド
-  catkin-clean                       ビルド成果物を削除
+  catkin-init                        Initialize the catkin workspace (first time only)
+  catkin-build                       Build all packages
+  catkin-build-pkg -PKG <name>       Build a specific package
+  catkin-clean                       Remove build artifacts
 
 [ROS]
-  rosdep-install                     src/ の依存パッケージをインストール
-  roscore                            roscore専用コンテナを起動
-  joy [-JsDev /dev/input/js0]        ジョイスティックノードを起動 (usbipd-win必要)
-  rviz                               RVizを起動 (VcXsrv必要)
-  gazebo                             Gazeboを起動 (VcXsrv必要)
+  rosdep-install                     Install dependencies from src/
+  roscore                            Start the roscore container
+  joy [-JsDev /dev/input/js0]        Launch joy_node (requires usbipd-win)
+  rviz                               Launch RViz (requires VcXsrv)
+  gazebo                             Launch Gazebo (requires VcXsrv)
 
 [rosbag]
-  bag-record [-TOPICS "/t1 /t2"]           録画
-  bag-play   -BAG <ファイル名> [-RATE 0.5] 再生
-  bag-info   -BAG <ファイル名>             メタ情報を表示
-  bag-compress -BAG <ファイル名>           bz2圧縮
-  bag-list                                 bags/ 内のファイル一覧
+  bag-record [-TOPICS "/t1 /t2"]           Record topics
+  bag-play   -BAG <filename> [-RATE 0.5]  Play a bag file
+  bag-info   -BAG <filename>              Show bag metadata
+  bag-compress -BAG <filename>            Compress bag with bz2
+  bag-list                                List bag files
 
-[CAN通信]  ※ Windows では非対応 — Linux 環境（make コマンド）を使用してください
+[CAN]  Not supported on Windows — use 'make can-*' in a Linux environment
 
-[シリアル通信]  ※ usbipd-win でのデバイスパススルーが必要（docs\windows-setup.md 参照）
+[Serial]  USB serial devices require usbipd-win passthrough (see docs\windows-setup.md)
   serial-list
   serial-monitor [-PORT /dev/ttyUSB0] [-BAUD 115200]
 
-詳細な環境構築手順: docs\windows-setup.md
+Setup guide: docs\windows-setup.md
 "@
     }
 
     default {
-        Write-Error "不明なコマンド: '$Command'`n.\run.ps1 help でコマンド一覧を確認してください"
+        Write-Error "Unknown command: '$Command'`nRun '.\run.ps1 help' to see available commands."
         exit 1
     }
 }
