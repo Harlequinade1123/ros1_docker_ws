@@ -134,7 +134,7 @@ switch ($Command.ToLower()) {
 
     # ── GUI ─────────────────────────────────────────────────────
     "roscore" {
-        Invoke-Compose @("--profile", "with-roscore", "up", "roscore")
+        Invoke-InRos "source /opt/ros/noetic/setup.bash && roscore"
     }
 
     "rviz" {
@@ -240,7 +240,7 @@ Usage: .\run.ps1 <command> [options]
 
 [ROS]
   rosdep-install                     Install dependencies from src/
-  roscore                            Start the roscore container
+  roscore                            Start roscore in the background
   joy [-JsDev /dev/input/js0]        Launch joy_node (requires usbipd-win)
   rviz                               Launch RViz (requires VcXsrv)
   gazebo                             Launch Gazebo (requires VcXsrv)

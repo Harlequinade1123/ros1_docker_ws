@@ -32,9 +32,6 @@ services:
       - ROS_MASTER_URI=http://localhost:11311
       - ROS_HOSTNAME=localhost
 
-    ports:
-      - "11311:11311"                       # ROS Master URI port
-
     # bridge network required on Windows (host mode not supported)
     networks:
       - ros_net
@@ -54,21 +51,6 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
-
-  # ── Dedicated roscore container (optional) ───────────────────────
-  # Usage: .\run.ps1 roscore
-  # Note: change ROS_MASTER_URI in the ros service to http://roscore:11311
-  roscore:
-    image: ros1_noetic_ws:latest
-    container_name: roscore
-    networks:
-      - ros_net
-    environment:
-      - ROS_MASTER_URI=http://roscore:11311
-      - ROS_HOSTNAME=roscore
-    command: roscore
-    profiles:
-      - with-roscore
 
 networks:
   ros_net:

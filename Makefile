@@ -68,8 +68,8 @@ joy:            ## Launch joy_node  (JS_DEV=/dev/input/js0)
 	  "source /opt/ros/noetic/setup.bash && \
 	   rosrun joy joy_node _dev:=$(JS_DEV)"
 
-roscore:        ## Start roscore
-	$(COMPOSE) --profile with-roscore up roscore
+roscore:        ## Start roscore inside the container
+	$(EXEC) "source /opt/ros/noetic/setup.bash && roscore"
 
 rviz:           ## Launch RViz
 	$(EXEC) \
