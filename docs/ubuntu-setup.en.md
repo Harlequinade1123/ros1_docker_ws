@@ -100,7 +100,10 @@ When you run `make up` / `make shell` / `make rviz` / `make gazebo`, `xhost +loc
 
 ### Launch
 
+Start roscore before launching RViz or Gazebo.
+
 ```bash
+make roscore  # Start roscore in the background
 make rviz     # Launch RViz
 make gazebo   # Launch Gazebo
 ```
@@ -176,8 +179,8 @@ make can-status IFACE=can0
 # Display all received frames (Ctrl+C to stop)
 make can-dump IFACE=can0
 
-# Send one frame (ID=0x123, data=0x11 0x22 0x33)
-make can-send IFACE=can0 ID=123 DATA="11 22 33"
+# Send one frame (ID=0x123, data=0x11 0x22 0x33 0x44)
+make can-send IFACE=can0 ID=123 DATA=11.22.33.44
 
 # Direct operations inside the container
 make shell
@@ -321,7 +324,7 @@ deploy:
     reservations:
       devices:
         - driver: nvidia
-          count: all
+          count: 1
           capabilities: [gpu]
 ```
 
