@@ -616,12 +616,16 @@ netstat -ano | findstr :11311
 .\run.ps1 down
 ```
 
-### ROS_MASTER_URI When Using the roscore Profile
+### Cannot Connect to roscore
 
-When running roscore in a separate container (`.\run.ps1 roscore`), you need to update `ROS_MASTER_URI` for the `ros` service in `docker/docker-compose.windows.yml`.
+Start roscore before running any command that requires ROS communication (RViz, rosbag play, etc.).
 
-```yaml
-environment:
-  - ROS_MASTER_URI=http://roscore:11311   # use the roscore container name
-  - ROS_HOSTNAME=ros1_ws
+```powershell
+# Location: PowerShell
+
+# Start roscore
+.\run.ps1 roscore
+
+# Verify the container is running (ros1_ws should be listed)
+docker ps
 ```

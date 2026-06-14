@@ -622,12 +622,16 @@ netstat -ano | findstr :11311
 .\run.ps1 down
 ```
 
-### roscore プロファイル使用時の ROS_MASTER_URI
+### roscore に接続できない
 
-roscore を別コンテナで動かす場合（`.\run.ps1 roscore`），`ros` サービスの `ROS_MASTER_URI` を `docker/docker-compose.windows.yml` で変更する必要があります．
+RViz や rosbag の再生など ROS 通信が必要なコマンドを実行する前に，roscore を起動してください．
 
-```yaml
-environment:
-  - ROS_MASTER_URI=http://roscore:11311   # roscore コンテナ名に変更
-  - ROS_HOSTNAME=ros1_ws
+```powershell
+# 実行場所: PowerShell
+
+# roscore を起動
+.\run.ps1 roscore
+
+# コンテナの起動を確認（ros1_ws が表示されれば OK）
+docker ps
 ```
