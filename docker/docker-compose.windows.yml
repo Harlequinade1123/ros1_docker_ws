@@ -1,66 +1,63 @@
-version: "3.9"
-
-# Windows 版 docker-compose
-# 変更点:
-#   - network_mode: host → bridge ネットワーク (Windows Docker では host モード非対応)
-#   - X11 Unix ソケットなし → VcXsrv へ TCP 接続 (DISPLAY=host.docker.internal:0.0)
-#   - /dev:/dev なし → USB デバイスは usbipd-win で個別パススルー
-#   - /run/udev なし
+# Windows docker-compose
+# Differences from docker-compose.yml:
+#   - network_mode: host → bridge network (host mode not supported on Windows Docker)
+#   - No X11 Unix socket → TCP connection to VcXsrv (DISPLAY=host.docker.internal:0.0)
+#   - No /dev:/dev → USB devices passed through individually via usbipd-win
+#   - No /run/udev
 
 services:
   ros:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     image: ros1_noetic_ws:latest
     container_name: ros1_ws
 
     volumes:
-      - ../catkin_ws:/home/ros/catkin_ws   # ソースはホストで管理
-      - ../bags:/home/ros/bags              # rosbag 保存先
-      # ジョイスティックを使う場合のみ有効（usbipd-win でアタッチ後に WSL2 へ /dev/input が現れる）
-      # ジョイスティック未使用時や /dev/input が存在しない場合はこの行をコメントアウトすること
-      - /dev/input:/dev/input              # ジョイスティック (usbipd-win アタッチ後)
+      - ../catkin_ws:/home/ros/catkin_ws   # source managed on host
+      - ../bags:/home/ros/bags              # rosbag storage
+      # Joystick: enable after attaching via usbipd-win (WSL2 exposes /dev/input)
+      # Comment out if no joystick is connected
+      - /dev/input:/dev/input              # joystick (after usbipd-win attach)
 
-    # シリアル USB デバイスを個別にパススルーする場合は以下を有効化
-    # (usbipd-win でアタッチ済みであること)
+    # To pass through a USB serial device, enable the lines below
+    # (device must be attached via usbipd-win first)
     # devices:
-    #   - /dev/ttyUSB0:/dev/ttyUSB0        # シリアル (CH340、FTDI 等)
-    #   - /dev/ttyACM0:/dev/ttyACM0        # CDC ACM (Arduino 等)
+    #   - /dev/ttyUSB0:/dev/ttyUSB0        # serial (CH340, FTDI, etc.)
+    #   - /dev/ttyACM0:/dev/ttyACM0        # CDC ACM (Arduino, etc.)
 
     environment:
-      - DISPLAY=host.docker.internal:0.0   # VcXsrv (Windows ホスト) への接続先
+      - DISPLAY=host.docker.internal:0.0   # VcXsrv on Windows host
       - QT_X11_NO_MITSHM=1
       - ROS_MASTER_URI=http://localhost:11311
       - ROS_HOSTNAME=localhost
 
     ports:
-      - "11311:11311"                       # ROS Master URI ポート
+      - "11311:11311"                       # ROS Master URI port
 
-    # Windows では host ネットワークが使えないため bridge を使用
+    # bridge network required on Windows (host mode not supported)
     networks:
       - ros_net
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-    privileged: true
     stdin_open: true
     tty: true
     working_dir: /home/ros/catkin_ws
 
-    # GPU サポート (任意 - NVIDIA GPU + nvidia-container-toolkit が必要)
+    # GPU support (optional — requires NVIDIA GPU + nvidia-container-toolkit on host)
     # deploy:
     #   resources:
     #     reservations:
     #       devices:
     #         - driver: nvidia
-    #           count: all
+    #           count: 1
     #           capabilities: [gpu]
 
-  # ── roscore 専用コンテナ (オプション) ────────────────────────────
-  # 使用: .\run.ps1 roscore
-  # ※ ros サービスの ROS_MASTER_URI を http://roscore:11311 に変更すること
+  # ── Dedicated roscore container (optional) ───────────────────────
+  # Usage: .\run.ps1 roscore
+  # Note: change ROS_MASTER_URI in the ros service to http://roscore:11311
   roscore:
     image: ros1_noetic_ws:latest
     container_name: roscore
