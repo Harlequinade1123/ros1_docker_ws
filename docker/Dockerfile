@@ -123,7 +123,7 @@ RUN mkdir -p ${WORKSPACE}/src && \
              catkin config \
                --workspace ${WORKSPACE} \
                --extend /opt/ros/noetic \
-               --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo" || true
+               --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 
 # ── rosbag storage directory ──────────────────────────────────────
 RUN mkdir -p /home/ros/bags
@@ -132,8 +132,8 @@ RUN mkdir -p /home/ros/bags
 RUN echo "[ -f /usr/share/bash-completion/bash_completion ] && source /usr/share/bash-completion/bash_completion" >> ~/.bashrc && \
     echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc && \
     echo "[ -f ${WORKSPACE}/devel/setup.bash ] && source ${WORKSPACE}/devel/setup.bash" >> ~/.bashrc && \
-    echo "export ROS_HOSTNAME=localhost" >> ~/.bashrc && \
-    echo "export ROS_MASTER_URI=http://localhost:11311" >> ~/.bashrc && \
+    echo 'export ROS_HOSTNAME=${ROS_HOSTNAME:-localhost}' >> ~/.bashrc && \
+    echo 'export ROS_MASTER_URI=${ROS_MASTER_URI:-http://localhost:11311}' >> ~/.bashrc && \
     echo "export ROSBAG_DIR=/home/ros/bags" >> ~/.bashrc && \
     echo "alias bag-record='rosbag record -o \${ROSBAG_DIR}/'" >> ~/.bashrc && \
     echo "alias bag-play='rosbag play'" >> ~/.bashrc && \
