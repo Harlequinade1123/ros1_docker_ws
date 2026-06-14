@@ -1,14 +1,14 @@
-# catkin ビルド成果物
+# catkin build artifacts
 catkin_ws/build/
 catkin_ws/devel/
 catkin_ws/install/
 catkin_ws/logs/
 catkin_ws/.catkin_tools/
 
-# src/ 以下のクローンパッケージは管理しない（vcstool で取得）
+# Source packages cloned by vcstool (not tracked in Git)
 catkin_ws/src/*/
 
-# rosbag (大容量ファイルは Git 管理外)
+# rosbag (large files excluded from Git)
 bags/*.bag
 bags/*.bag.active
 
@@ -16,17 +16,19 @@ bags/*.bag.active
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
-# エディタ
+# Editor
 .vscode/
 .idea/
 *.swp
+*.swo
 *~
 
 # Claude Code
 .claude/
 
-# npm / npx
+# npm
 node_modules/
 package.json
 package-lock.json
