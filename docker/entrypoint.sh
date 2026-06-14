@@ -1,11 +1,10 @@
 #!/bin/bash
-# コンテナ起動時に ROS 環境を自動セットアップするエントリーポイント
-# root で実行し，デバイスグループを動的に付与してから gosu で ros ユーザへ移行する
+# Entrypoint: runs as root, dynamically assigns device GIDs, then drops to the ros user via gosu
 
 set -e
 
-# /dev/input/js* デバイスの GID を ros ユーザに動的付与
-# （ホストの input グループ GID とコンテナの GID が異なる場合でも対応）
+# Dynamically assign host joystick GID to the ros user so it can access /dev/input/js*
+# even when the host input group GID differs from the container's GID
 for JS in /dev/input/js*; do
   [ -c "$JS" ] || continue
   JS_GID=$(stat -c %g "$JS")

@@ -4,9 +4,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# ── 基本ツール & GUI サポート ──────────────────────────────────────
+# ── Base tools & GUI support ──────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # ビルドツール
+    # Build tools
     python3-catkin-tools \
     python3-rosdep \
     python3-pip \
@@ -20,19 +20,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-gazebo-ros-control \
     ros-noetic-rqt \
     ros-noetic-rqt-common-plugins \
-    # rosbag / トピック解析
+    # rosbag / topic inspection
     ros-noetic-rosbag \
     ros-noetic-rosbag-storage \
     ros-noetic-rqt-bag \
     ros-noetic-rqt-bag-plugins \
     ros-noetic-rosbash \
     python3-rosbag \
-    # CAN 通信
+    # CAN
     can-utils \
     iproute2 \
     libsocketcan-dev \
     libsocketcan2 \
-    # シリアル通信
+    # Serial
     python3-serial \
     minicom \
     setserial \
@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-dri \
     x11-apps \
     mesa-utils \
-    # URDF / xacro / ロボットモデル
+    # URDF / xacro / robot models
     ros-noetic-xacro \
     ros-noetic-urdf \
     ros-noetic-robot-state-publisher \
@@ -57,14 +57,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-ros-controllers \
     # geometry
     ros-noetic-geometry \
-    # アクション・動的設定
+    # Actions / dynamic reconfigure
     ros-noetic-actionlib \
     ros-noetic-dynamic-reconfigure \
-    # テスト
+    # Testing
     ros-noetic-rostest \
-    # テレオペ
+    # Teleoperation
     ros-noetic-joy \
-    # 画像・点群
+    # Image / point cloud
     ros-noetic-image-transport \
     ros-noetic-image-proc \
     ros-noetic-image-geometry \
@@ -74,19 +74,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # LiDAR
     ros-noetic-laser-geometry \
     ros-noetic-laser-filters \
-    # ユーティリティ
+    # Utilities
     ros-noetic-angles \
     ros-noetic-filters \
     ros-noetic-pluginlib \
-    # チュートリアル
+    # Tutorials
     ros-noetic-turtlesim \
-    # 可視化補助
+    # Visualization helpers
     ros-noetic-rqt-graph \
     ros-noetic-rqt-tf-tree \
-    # ワークスペース管理
+    # Workspace management
     python3-vcstool \
     python3-wstool \
-    # その他
+    # Misc
     tmux \
     vim \
     bash-completion \
@@ -96,30 +96,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
   && rm -rf /var/lib/apt/lists/*
 
-# ── rosdep 初期化 ──────────────────────────────────────────────────
+# ── rosdep init ───────────────────────────────────────────────────
 RUN rosdep init || true && rosdep update
 
-# ── ワークスペースのセットアップ ──────────────────────────────────
+# ── Workspace setup ───────────────────────────────────────────────
 ARG WORKSPACE=/home/ros/catkin_ws
 ENV WORKSPACE=${WORKSPACE}
 
-RUN apt-get update && apt-get install -y --no-install-recommends sudo \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo \
+    gosu \
   && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash ros && \
     mkdir -p ${WORKSPACE}/src && \
-    usermod -aG dialout ros && \
+    usermod -aG dialout,plugdev ros && \
     echo "ros ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     chown -R ros:ros /home/ros
-
-# gosu: エントリーポイントで root → ros ユーザへ安全に移行するため
-RUN apt-get update && apt-get install -y --no-install-recommends gosu \
-  && rm -rf /var/lib/apt/lists/*
 
 USER ros
 WORKDIR ${WORKSPACE}
 
-# ── catkin build のデフォルト設定 ────────────────────────────────
+# ── catkin build defaults ─────────────────────────────────────────
 RUN mkdir -p ${WORKSPACE}/src && \
     bash -c "source /opt/ros/noetic/setup.bash && \
              catkin config \
@@ -127,10 +125,10 @@ RUN mkdir -p ${WORKSPACE}/src && \
                --extend /opt/ros/noetic \
                --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo" || true
 
-# ── rosbag 保存ディレクトリ ──────────────────────────────────────
+# ── rosbag storage directory ──────────────────────────────────────
 RUN mkdir -p /home/ros/bags
 
-# ── bashrc に自動 source ───────────────────────────────────────────
+# ── bashrc auto-source ────────────────────────────────────────────
 RUN echo "[ -f /usr/share/bash-completion/bash_completion ] && source /usr/share/bash-completion/bash_completion" >> ~/.bashrc && \
     echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc && \
     echo "[ -f ${WORKSPACE}/devel/setup.bash ] && source ${WORKSPACE}/devel/setup.bash" >> ~/.bashrc && \
@@ -140,15 +138,15 @@ RUN echo "[ -f /usr/share/bash-completion/bash_completion ] && source /usr/share
     echo "alias bag-record='rosbag record -o \${ROSBAG_DIR}/'" >> ~/.bashrc && \
     echo "alias bag-play='rosbag play'" >> ~/.bashrc && \
     echo "alias bag-info='rosbag info'" >> ~/.bashrc && \
-    echo "# CAN ヘルパー" >> ~/.bashrc && \
+    echo "# CAN helpers" >> ~/.bashrc && \
     echo "alias can-status='ip -details -statistics link show'" >> ~/.bashrc && \
     echo "alias can-dump='candump'" >> ~/.bashrc && \
-    echo "# シリアルヘルパー" >> ~/.bashrc && \
+    echo "# Serial helpers" >> ~/.bashrc && \
     echo "alias serial-list='ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null'" >> ~/.bashrc
 
-# エントリーポイント: root で起動 → デバイスGID付与 → gosu で ros ユーザへ移行
+# Entrypoint: runs as root, assigns device GIDs, then drops to ros user via gosu
 USER root
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
